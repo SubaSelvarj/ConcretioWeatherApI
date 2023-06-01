@@ -1,0 +1,8 @@
+trigger WeatherTrigger on Location_Degree__c (after insert, after update) {
+
+    if(!WeatherTriggerHandler.isExecute){
+        if(!System.isFuture()){
+            WeatherTriggerHandler.updateWeather(Trigger.new);
+            }
+            }
+}
