@@ -1,0 +1,79 @@
+public class WeatherAPIWrapper {
+    
+    @future(callout = true)
+    public static void getWeatherData(set<Id> locations) {
+        Set<Id> locationIds = new Set<Id>();
+        Set<String> locationStrings = new Set<String>(); 
+        List<Location_Degree__c> locDegree = [Select Id,Location_Points__latitude__s,Location_Points__longitude__s 
+                                             From Location_Degree__c where Id in: locations];
+       
+       for (Location_Degree__c loc : locDegree ) {
+            String latitude = String.valueOf(loc.Location_Points__latitude__s);
+            String longitude = String.valueOf(loc.Location_Points__longitude__s);
+            locationStrings.add(latitude + ';' + longitude);
+            System.debug('locations');
+            locationIds.add(loc.Id);
+        }
+       
+        Map<String, Map<String, Object>> weatherData = new Map<String, Map<String, Object>>();
+
+        for (String location : locationStrings) {
+            String[] latLong = location.split(';');
+            String latitude = latLong[0];
+            String longitude = latLong[1];
+
+            String apiUrl = 'https://api.openweathermap.org/data/2.5/weather?lat=' + latitude + '&lon=' + longitude + '&appid=fe9196d83f29450d98a9cd0d49a10a93';
+
+            try {
+                Http http = new Http();
+                HttpRequest request = new HttpRequest();
+                request.setEndpoint(apiUrl);
+                request.setMethod('GET');
+                HttpResponse response = http.send(request);
+
+                if (response.getStatusCode() == 200) {
+                    Map<String, Object> responseData = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
+
+                    List<Object> weatherList = (List<Object>) responseData.get('weather');
+                    Map<String, Object> weatherObject = (Map<String, Object>) weatherList[0];
+                    String weather = String.valueOf(weatherObject.get('main'));
+
+                    Map<String, Object> mainData = (Map<String, Object>) responseData.get('main');
+                    Double temperature = (Double) mainData.get('temp');
+                    Decimal temperatureDecimal = Decimal.valueOf(String.valueOf(temperature));
+
+                    Map<String, Object> data = new Map<String, Object>();
+                    data.put('weather', weather);
+                    data.put('temperature', temperatureDecimal);
+
+                    weatherData.put(location, data);
+                }
+                
+                 List<Location_Degree__c> updateList = new List<Location_Degree__c>(); 
+            for (Location_Degree__c loc : locDegree ) {
+            Location_Degree__c  newLoc = new Location_Degree__c();
+                String latitude1 = String.valueOf(loc.Location_Points__latitude__s);
+                String longitude1 = String.valueOf(loc.Location_Points__longitude__s);
+                String key = latitude1 + ';' + longitude1;
+    
+                if (weatherData.containsKey(key)) {
+                    Map<String, Object> data = weatherData.get(key);
+                    String weather = String.valueOf(data.get('weather'));
+                    String temperatureString = String.valueOf(data.get('temperature'));
+                    Decimal temperature = Decimal.valueOf(temperatureString.replace(',', '.'));
+                    newLoc.Weather__c = weather;
+                    newLoc.Temperatures__c= String.valueOf(temperature);
+                }
+                newLoc.Id = loc.Id; 
+                updateList.add(newLoc);
+            }
+            
+            update updateList;
+            } catch (Exception e) {
+                System.debug('Error occurred: ' + e.getMessage());
+            }
+        }
+
+       // return weatherData;
+    }
+}
