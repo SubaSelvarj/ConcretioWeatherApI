@@ -1,0 +1,44 @@
+public class WeatherTriggerHandler {
+   public static boolean isExecute = false;
+   
+   
+   public static void updateWeather(List<Location_Degree__c> locations) {
+        Set<Id> locationIds = new Set<Id>();
+        Set<String> locationStrings = new Set<String>();
+
+        for (Location_Degree__c loc : locations) {
+            String latitude = String.valueOf(loc.Location_Points__latitude__s);
+            String longitude = String.valueOf(loc.Location_Points__longitude__s);
+             locationStrings.add(latitude + ';' + longitude);
+            System.debug('locations');
+            locationIds.add(loc.Id);
+        }
+
+        
+       WeatherAPIWrapper.getWeatherData(locationIds);
+        
+     //   system.debug('****weatherData***'+weatherData);
+
+       /* List<Location_Degree__c> updateList = new List<Location_Degree__c>(); 
+        for (Location_Degree__c loc : locations) {
+        Location_Degree__c  newLoc = new Location_Degree__c();
+            String latitude = String.valueOf(loc.Location_Points__latitude__s);
+            String longitude = String.valueOf(loc.Location_Points__longitude__s);
+            String key = latitude + ';' + longitude;
+
+            if (weatherData.containsKey(key)) {
+                Map<String, Object> data = weatherData.get(key);
+                String weather = String.valueOf(data.get('weather'));
+                String temperatureString = String.valueOf(data.get('temperature'));
+                Decimal temperature = Decimal.valueOf(temperatureString.replace(',', '.'));
+                loc.Weather__c = weather;
+                loc.Temperature__c = temperature;
+            }
+            newLoc.Id = loc.Id; 
+            updateList.add(newLoc);
+        }
+         isExecute = true;
+        update updateList; */
+       
+    }
+}
